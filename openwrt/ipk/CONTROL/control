@@ -1,0 +1,10 @@
+Package: kmod-rtl8852bu
+Version: 1.0.0-1
+Depends: kernel (= 5.4.213)
+Section: kernel
+Architecture: aarch64_cortex-a53_neon-vfpv4
+Maintainer: Kevin Herzig
+Description: Realtek RTL8852BU/RTL8832BU USB WiFi driver for QSDK 12.5
+ Patched for Qualcomm QSDK 12.5 (kernel 5.4.213) with fixes for
+ MLO backport crashes on connect/disconnect. Tested on GL.iNet GL-BE3600.
+ USB device: 0bda:b832

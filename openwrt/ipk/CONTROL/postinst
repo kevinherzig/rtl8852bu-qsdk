@@ -1,0 +1,6 @@
+#!/bin/sh
+[ -z "${IPKG_INSTROOT}" ] || exit 0
+chmod +x /etc/init.d/rtl8852bu
+/etc/init.d/rtl8852bu enable
+echo "RTL8852BU driver installed. Edit /root/wpa.conf with your WiFi credentials."
+echo "Start with: /etc/init.d/rtl8852bu start"
