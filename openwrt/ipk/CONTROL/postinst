@@ -1,6 +1,24 @@
 #!/bin/sh
 [ -z "${IPKG_INSTROOT}" ] || exit 0
-chmod +x /etc/init.d/rtl8852bu
-/etc/init.d/rtl8852bu enable
-echo "RTL8852BU driver installed. Edit /root/wpa.conf with your WiFi credentials."
-echo "Start with: /etc/init.d/rtl8852bu start"
+
+# Auto-load module on boot
+if ! grep -q "8852bu" /etc/modules.d/* 2>/dev/null; then
+    echo "8852bu rtw_power_mgnt=0 rtw_ips_mode=0" > /etc/modules.d/rtl8852bu
+fi
+
+# Load module now
+insmod 8852bu rtw_power_mgnt=0 rtw_ips_mode=0 2>/dev/null
+sleep 2
+
+# Detect and create UCI config
+. /lib/wifi/realtek.sh
+
+# Ensure wwan network exists
+uci -q get network.wwan >/dev/null || {
+    uci set network.wwan=interface
+    uci set network.wwan.proto='dhcp'
+    uci commit network
+}
+
+echo "RTL8852BU driver installed."
+echo "Configure the adapter in LuCI under Network -> Wireless."

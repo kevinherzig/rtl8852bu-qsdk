@@ -1,6 +1,13 @@
 #!/bin/sh
 [ -z "${IPKG_INSTROOT}" ] || exit 0
-/etc/init.d/rtl8852bu disable 2>/dev/null
-/etc/init.d/rtl8852bu stop 2>/dev/null
+
+# Stop the radio
+wifi down radio_rtk 2>/dev/null
+
+# Remove auto-load
+rm -f /etc/modules.d/rtl8852bu
+
+# Unload module
 rmmod 8852bu 2>/dev/null
+
 exit 0

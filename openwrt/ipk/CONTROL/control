@@ -1,6 +1,6 @@
 Package: kmod-rtl8852bu
 Version: 1.0.0-1
-Depends: kernel (= 5.4.213)
+Depends: kernel (= 5.4.213-1-9bbeb3b224e3e25c93c10e0a5e1b66bd)
 Section: kernel
 Architecture: aarch64_cortex-a53_neon-vfpv4
 Maintainer: Kevin Herzig

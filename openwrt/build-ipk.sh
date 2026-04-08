@@ -30,6 +30,14 @@ mkdir -p "$BUILD_DIR/etc/init.d"
 cp "$SCRIPT_DIR/rtl8852bu.init" "$BUILD_DIR/etc/init.d/rtl8852bu"
 chmod 755 "$BUILD_DIR/etc/init.d/rtl8852bu"
 
+mkdir -p "$BUILD_DIR/lib/netifd/wireless"
+cp "$SCRIPT_DIR/lib/netifd/wireless/realtek.sh" "$BUILD_DIR/lib/netifd/wireless/realtek.sh"
+chmod 755 "$BUILD_DIR/lib/netifd/wireless/realtek.sh"
+
+mkdir -p "$BUILD_DIR/lib/wifi"
+cp "$SCRIPT_DIR/lib/wifi/realtek.sh" "$BUILD_DIR/lib/wifi/realtek.sh"
+chmod 755 "$BUILD_DIR/lib/wifi/realtek.sh"
+
 mkdir -p "$BUILD_DIR/root"
 cp "$IPK_DIR/root/wpa.conf" "$BUILD_DIR/root/wpa.conf"
 
@@ -51,7 +59,7 @@ echo "2.0" > "$SCRIPT_DIR/debian-binary"
 
 # Assemble ipk
 cd "$SCRIPT_DIR"
-ar r "$REPO_DIR/$PKG_NAME" debian-binary control.tar.gz data.tar.gz
+tar czf "$REPO_DIR/$PKG_NAME" --owner=0 --group=0 debian-binary control.tar.gz data.tar.gz
 
 # Cleanup
 rm -rf "$BUILD_DIR" debian-binary control.tar.gz data.tar.gz
