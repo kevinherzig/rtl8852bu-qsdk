@@ -440,12 +440,51 @@ void rtw_cfg80211_deinit_rfkill(struct wiphy *wiphy);
 #define rtw_cfg80211_remain_on_channel_expired(wdev, cookie, chan, chan_type, gfp) cfg80211_remain_on_channel_expired(wdev, cookie, chan, gfp)
 #endif
 
-#define rtw_cfg80211_connect_result(wdev, bssid, req_ie, req_ie_len, resp_ie, resp_ie_len, status, gfp) cfg80211_connect_result(wdev_to_ndev(wdev), bssid, req_ie, req_ie_len, resp_ie, resp_ie_len, status, gfp)
+static inline void rtw_cfg80211_connect_result(struct wireless_dev *wdev,
+	const u8 *bssid, const u8 *req_ie, size_t req_ie_len,
+	const u8 *resp_ie, size_t resp_ie_len, u16 status, gfp_t gfp)
+{
+	struct cfg80211_connect_resp_params params = {};
+	struct net_device *dev = wdev_to_ndev(wdev);
+	struct cfg80211_bss *bss = NULL;
+	struct cfg80211_bss *link_bss = NULL;
+
+	if (status == WLAN_STATUS_SUCCESS && bssid) {
+		bss = cfg80211_get_bss(wdev->wiphy, NULL, bssid,
+				       wdev->ssid, wdev->ssid_len,
+				       IEEE80211_BSS_TYPE_ESS,
+				       IEEE80211_PRIVACY_ANY);
+		if (!bss) {
+			bss = cfg80211_get_bss(wdev->wiphy, NULL, bssid,
+					       NULL, 0,
+					       IEEE80211_BSS_TYPE_ESS,
+					       IEEE80211_PRIVACY_ANY);
+		}
+		/* Get a second reference for links[0].bss */
+		if (bss) {
+			link_bss = cfg80211_get_bss(wdev->wiphy, NULL, bssid,
+						    wdev->ssid, wdev->ssid_len,
+						    IEEE80211_BSS_TYPE_ESS,
+						    IEEE80211_PRIVACY_ANY);
+		}
+	}
+
+	params.status = status;
+	params.links[0].bssid = bssid;
+	params.links[0].bss = link_bss;
+	params.bss = bss;
+	params.req_ie = req_ie;
+	params.req_ie_len = req_ie_len;
+	params.resp_ie = resp_ie;
+	params.resp_ie_len = resp_ie_len;
+
+	cfg80211_connect_done(dev, &params, gfp);
+}
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0))
 #define rtw_cfg80211_disconnected(wdev, reason, ie, ie_len, locally_generated, gfp) cfg80211_disconnected(wdev_to_ndev(wdev), reason, ie, ie_len, gfp)
 #else
-#define rtw_cfg80211_disconnected(wdev, reason, ie, ie_len, locally_generated, gfp) cfg80211_disconnected(wdev_to_ndev(wdev), reason, ie, ie_len, locally_generated, gfp)
+#define rtw_cfg80211_disconnected(wdev, reason, ie, ie_len, locally_generated, gfp) cfg80211_disconnected(wdev_to_ndev(wdev), reason, ie, ie_len, locally_generated, 0, gfp)
 #endif
 
 #ifdef CONFIG_RTW_80211R

@@ -1,133 +1,138 @@
-This repo is was started with the code from the Realtek USB driver
-RTL8852BU_WiFi_linux_v1.19.3-45-g7583a804a.20230505. The current code improves
-on the Realtek code by reworking the debug output to avoid spamming the logs.
-In the current settings, messages from RTW_ERR(), RTW_WARNING(), and
-RTW_WARNING() will be output.
+# RTL8852BU/RTL8832BU driver for Qualcomm QSDK 12.5
 
-If you want more output, increase the value of CONFIG_RTW_LOG_LEVEL in Makefile.
-This parameter should probably be one that can be set at module load time,
-but that is a matter for another time.
+Patched Realtek RTL8852BU/RTL8832BU USB WiFi driver for routers running **Qualcomm QSDK 12.5** (kernel 5.4.213), such as the **GL.iNet GL-BE3600**.
 
-The driver supports rtl8832bu/rtl8852bu chipsets.
+The upstream [lwfinger/rtl8852bu](https://github.com/lwfinger/rtl8852bu) driver crashes the kernel on connect and disconnect due to incompatibilities with Qualcomm's MLO (Multi-Link Operation) backport in QSDK. This fork fixes those issues.
 
-This driver currently handles the following devices:
+## Supported devices
 
-* ASUS USB-AX55 with USB ID 0b05:1a62
-* Realtek Demo Board with USB ID 0bda:8832
-* Realtek Demo Board with USB ID 0bda:883a
-* Realtek Demo Board with USB ID 0bda:8852
-* Realtek Demo Board with USB ID 0bda:885a
-* Realtek Demo Board with USB ID 0bda:a85b
+| Router | SoC | Kernel | Status |
+|--------|-----|--------|--------|
+| GL.iNet GL-BE3600 | Qualcomm IPQ5332 | 5.4.213 | Working |
 
-The device probably comes with a configuration that appears to be a USB disk,
-which contains a Windows driver. If a 'lsusb' command shows the ID 0bda:1a2b,
-then this disk is mounted. The way to avoid this is to edit either file
-/usr/lib/udev/rules.d/40-usb_modeswitch.rules, or
-/lib/udev/rules.d/40-usb_modeswitch.rules, whichever is on your system, and add
-the following lines:
+USB adapter: `0bda:b832` Realtek RTL8832BU 802.11ax WLAN Adapter
 
-# Wifi Dongle with Windows driver
-ATTR{idVendor}=="0bda", ATTR{idProduct}=="1a2b", RUN+="usb_modeswitch '/%k'"
+Should work on other QSDK 12.5 routers with the same kernel. Open an issue if you test on a different device.
 
-### Installation instruction
-##### Requirements
-You will need to install "make", "gcc", "kernel headers", "kernel build essentials", and "git".
+## Quick install (pre-built binary)
 
-For **Ubuntu**: You can install them with the following command
-```bash
-sudo apt-get update
-sudo apt-get install make gcc linux-headers-$(uname -r) build-essential git
-```
-For **Fedora**: You can install them with the following command
-```bash
-sudo dnf install kernel-headers kernel-devel
-sudo dnf group install "C Development Tools and Libraries"
-```
-For **openSUSE**: Install necessary headers with
-```bash
-sudo zypper install make gcc kernel-devel kernel-default-devel git libopenssl-devel
-```
-For **Arch**: After installing the necessary kernel headers and base-devel,
-```bash
-git clone https://aur.archlinux.org/rtw89-dkms-git.git
-cd rtw89-dkms-git
-makepkg -sri
-```
-If any of the packages above are not found check if your distro installs them like that.
+Download `8852bu.ko` from the [Releases page](https://github.com/kevinherzig/rtl8852bu/releases).
 
-##### Installation
-When a USB device is plugged in, or detected at boot, this rule causes the utulity
-usb_modeswitch to unload any 0bda:1a2b devices that it finds. If you have a
-device with different ID, change the rule accordingly.
+> Your router's vermagic must match exactly: `5.4.213 SMP preempt mod_unload aarch64`.
+> Check with: `modinfo /lib/modules/5.4.213/act_connmark.ko | grep vermagic`
 
-The build this driver, do the following:
+```sh
+# Copy to router
+scp 8852bu.ko root@192.168.8.1:/lib/modules/5.4.213/
 
-For all distros:
-```bash
-git clone https://github.com/lwfinger/rtl8852bu.git
-cd rtl8852bu
-make
-sudo make install
+# Load the module
+insmod 8852bu.ko rtw_power_mgnt=0 rtw_ips_mode=0
 
-When you get a new kernel, you will need to rebuild the driver. Do the following:
-cd rtl8852bu
-git pull
-make
-sudo make install
+# Verify the interface appeared
+ip link | grep wlan
 ```
 
-When your kernel is updated, then do a 'git pull' and redo the make commands.
+## Connect to a WiFi network
 
-##### Installation with module signing for SecureBoot
-For all distros:
-```bash
-git clone git://github.com/lwfinger/rtl8852bu.git
-cd rtl8852bu
-make
-sudo make sign-install
+Create a wpa_supplicant config on the router:
+
 ```
-You will be promted for a password, please keep it in mind and use it in next steps.
-
-Reboot to activate the new installed module.
-In the MOK managerment screen:
-1. Select "Enroll key" and enroll the key created by above sign-install step
-2. When promted, enter the password you entered when create sign key. 
-
-If you enter wrong password, your computer won't not rebootable. In this case,
-   use the BOOT menu from your BIOS, to boot into your OS then do below steps:
-
-```bash
-sudo mokutil --reset
-```
-Restart your computer
-Use BOOT menu from BIOS to boot into your OS
-In the MOK managerment screen, select reset MOK list
-Reboot then retry from the step make sign-install
-
-## Adding modules to DKMS for Debian/Ubuntu
-
-DKMS automatically rebuilds the driver module for each kernel update. (So that you don't have to `make; make install` at every update)
-
-Build and Installation (For currently active kernel)
-
-```bash
-# Add module to dkms tree
-sudo dkms add .
-
-# Build 
-sudo dkms build rtl8852bu -v 1.15.0.1
-
-# Install 
-sudo dkms install rtl8852bu -v 1.15.0.1
-
-# Check installation
-modinfo 8852bu
-
-# Load driver 
-modprobe 8852bu
+# /root/wpa.conf
+network={
+    ssid="YourSSID"
+    psk="YourPassword"
+    key_mgmt=WPA-PSK
+}
 ```
 
+Connect:
 
+```sh
+wpa_supplicant -i wlan2 -c /root/wpa.conf -B
+udhcpc -i wlan2
+```
 
+## Auto-start on boot
 
-Larry Finger
+An OpenWrt init script is included. Install it on the router:
+
+```sh
+# Copy the init script
+cp openwrt/rtl8852bu.init /etc/init.d/rtl8852bu
+chmod +x /etc/init.d/rtl8852bu
+/etc/init.d/rtl8852bu enable
+
+# Create the network interface for DHCP
+uci set network.wwan=interface
+uci set network.wwan.proto='dhcp'
+uci set network.wwan.ifname='wlan2'
+uci commit network
+```
+
+Edit `/root/wpa.conf` with your network credentials. The driver and connection will start automatically on boot.
+
+## Building from source
+
+### Prerequisites (Debian/Ubuntu x86_64)
+
+```sh
+sudo apt install -y gcc-aarch64-linux-gnu build-essential bc flex bison libssl-dev libelf-dev git
+```
+
+### Prepare kernel headers
+
+```sh
+git clone --depth 1 --branch NHSS.QSDK.12.5 \
+  https://git.codelinaro.org/clo/qsdk/oss/kernel/linux-ipq-5.4.git
+
+# Copy config from router
+scp root@192.168.8.1:/proc/config.gz .
+gunzip config.gz
+cp config linux-ipq-5.4/.config
+
+cd linux-ipq-5.4
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- modules_prepare
+
+# Fix vermagic - remove trailing '+' added by git
+echo "5.4.213" > include/config/kernel.release
+echo '#define UTS_RELEASE "5.4.213"' > include/generated/utsrelease.h
+```
+
+Check your router's actual kernel version with `uname -r` and match the vermagic exactly.
+
+### Build
+
+```sh
+cd /path/to/rtl8852bu
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KSRC=/path/to/linux-ipq-5.4 -j$(nproc)
+```
+
+Output: `8852bu.ko`
+
+## What was patched
+
+Six issues were fixed to make this driver work on QSDK 12.5:
+
+1. **Connect/disconnect kernel crash** -- QSDK's MLO backport adds `links[]` to `cfg80211_connect_resp_params` but `__cfg80211_connect_result()` still uses `cr->bss` (NULL). Also, `cfg80211_update_link_bss()` can free `links[0].bss`, creating a use-after-free if both fields point to the same object. Fixed by calling `cfg80211_connect_done()` directly with two separate BSS references.
+
+2. **`cfg80211_disconnected()` signature** -- QSDK adds `int link_id` parameter. Fixed by passing `0`.
+
+3. **`stop_ap` callback signature** -- QSDK changes to `struct cfg80211_ap_settings *`. Updated to match.
+
+4. **`cfg80211_external_auth_params` ABI mismatch** -- Kernel uses `const u8 *pmkid` (pointer) but driver uses `u8 pmkid[16]` (array). Fixed by copying fields individually instead of casting.
+
+5. **GCC 14 build errors** -- Added `-Wno-error` flags for harmless warnings promoted to errors.
+
+6. **`iw dev del` kernel crash** -- All out-of-tree Realtek drivers deadlock when the primary interface is deleted. Fixed by refusing deletion (`-EOPNOTSUPP`) and fixing the monitor interface rtnl_lock deadlock. See [openwrt/openwrt#13919](https://github.com/openwrt/openwrt/issues/13919).
+
+## Known limitations
+
+- **No LuCI/web UI integration.** QSDK routers ship only `qcawificfg80211.sh` as the wireless handler. The `mac80211.sh` handler is unavailable and incompatible with this driver. Manage the adapter via CLI only.
+- **`iw dev wlan2 del` returns "not supported".** This is intentional to prevent a kernel crash. The driver does not support runtime interface deletion.
+- **Power management must be disabled.** Always load with `rtw_power_mgnt=0 rtw_ips_mode=0`.
+
+## Credits
+
+- Original driver: [lwfinger/rtl8852bu](https://github.com/lwfinger/rtl8852bu)
+- QSDK kernel source: [CodeLinaro](https://git.codelinaro.org/clo/qsdk/oss/kernel/linux-ipq-5.4)

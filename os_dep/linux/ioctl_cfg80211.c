@@ -5103,6 +5103,9 @@ static int cfg80211_rtw_del_virtual_intf(struct wiphy *wiphy,
 			pwdev_priv->pmon_ndev = NULL;
 			pwdev_priv->ifname_mon[0] = '\0';
 			RTW_INFO(FUNC_NDEV_FMT" remove monitor ndev\n", FUNC_NDEV_ARG(ndev));
+		} else if (is_primary_adapter(adapter)) {
+			RTW_INFO(FUNC_NDEV_FMT" refusing to delete primary interface\n", FUNC_NDEV_ARG(ndev));
+			ret = -EOPNOTSUPP;
 		} else {
 			RTW_INFO(FUNC_NDEV_FMT" unregister ndev\n", FUNC_NDEV_ARG(ndev));
 			rtw_os_ndev_unregister(adapter);
@@ -5492,11 +5495,7 @@ static int cfg80211_rtw_change_beacon(struct wiphy *wiphy, struct net_device *nd
 	return ret;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 19, 2)
-static int cfg80211_rtw_stop_ap(struct wiphy *wiphy, struct net_device *ndev)
-#else
-static int cfg80211_rtw_stop_ap(struct wiphy *wiphy, struct net_device *ndev, unsigned int link_id)
-#endif
+static int cfg80211_rtw_stop_ap(struct wiphy *wiphy, struct net_device *ndev, struct cfg80211_ap_settings *settings)
 {
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(ndev);
 
@@ -6528,6 +6527,7 @@ static int	cfg80211_rtw_assoc(struct wiphy *wiphy, struct net_device *ndev,
 void rtw_cfg80211_external_auth_request(_adapter *padapter, union recv_frame *rframe)
 {
 	struct rtw_external_auth_params params;
+	struct cfg80211_external_auth_params kern_params = {};
 	struct wireless_dev *wdev = padapter->rtw_wdev;
 	struct net_device *netdev = wdev_to_ndev(wdev);
 	struct _ADAPTER_LINK *padapter_link = GET_PRIMARY_LINK(padapter);
@@ -6555,9 +6555,15 @@ void rtw_cfg80211_external_auth_request(_adapter *padapter, union recv_frame *rf
 		pmlmeinfo->network.Ssid.SsidLength);
 	params.key_mgmt_suite = 0x8ac0f00;
 
+	kern_params.action = params.action;
+	_rtw_memcpy(kern_params.bssid, params.bssid, ETH_ALEN);
+	kern_params.ssid = params.ssid;
+	kern_params.key_mgmt_suite = params.key_mgmt_suite;
+	kern_params.status = params.status;
+	kern_params.pmkid = NULL;
+
 	RTW_INFO("external auth: use kernel API: cfg80211_external_auth_request()\n");
-	cfg80211_external_auth_request(netdev,
-		(struct cfg80211_external_auth_params *)&params, GFP_ATOMIC);
+	cfg80211_external_auth_request(netdev, &kern_params, GFP_ATOMIC);
 #elif (KERNEL_VERSION(2, 6, 37) <= LINUX_VERSION_CODE)
 	set_frame_sub_type(frame, WIFI_AUTH);
 
@@ -10494,12 +10500,20 @@ int rtw_hostapd_acs_dump_survey(struct wiphy *wiphy, struct net_device *netdev, 
 int cfg80211_rtw_external_auth(struct wiphy *wiphy, struct net_device *dev,
 	struct cfg80211_external_auth_params *params)
 {
+	struct rtw_external_auth_params rtw_params = {};
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(dev);
 
 	RTW_INFO(FUNC_NDEV_FMT"\n", FUNC_NDEV_ARG(dev));
 
-	rtw_cfg80211_external_auth_status(wiphy, dev,
-		(struct rtw_external_auth_params *)params);
+	rtw_params.action = params->action;
+	_rtw_memcpy(rtw_params.bssid, params->bssid, ETH_ALEN);
+	rtw_params.ssid = params->ssid;
+	rtw_params.key_mgmt_suite = params->key_mgmt_suite;
+	rtw_params.status = params->status;
+	if (params->pmkid)
+		_rtw_memcpy(rtw_params.pmkid, params->pmkid, PMKID_LEN);
+
+	rtw_cfg80211_external_auth_status(wiphy, dev, &rtw_params);
 
 	return 0;
 }
@@ -11044,7 +11058,10 @@ void rtw_wdev_unregister(struct wireless_dev *wdev)
 
 	if (pwdev_priv->pmon_ndev) {
 		RTW_INFO("%s, unregister monitor interface\n", __func__);
-		unregister_netdev(pwdev_priv->pmon_ndev);
+		if (rtw_rtnl_lock_needed(adapter_to_dvobj(adapter)))
+			unregister_netdev(pwdev_priv->pmon_ndev);
+		else
+			unregister_netdevice(pwdev_priv->pmon_ndev);
 	}
 }
 

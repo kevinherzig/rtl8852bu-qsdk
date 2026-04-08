@@ -1,0 +1,28 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+STOP=10
+
+USE_PROCD=1
+
+start_service() {
+    insmod /lib/modules/5.4.213/8852bu.ko rtw_power_mgnt=0 rtw_ips_mode=0 2>/dev/null
+    sleep 2
+    ifconfig wlan2 up
+
+    procd_open_instance
+    procd_set_param command wpa_supplicant -i wlan2 -c /root/wpa.conf
+    procd_set_param respawn
+    procd_close_instance
+}
+
+stop_service() {
+    killall -q wpa_supplicant
+    ifconfig wlan2 down 2>/dev/null
+    rmmod 8852bu 2>/dev/null
+}
+
+reload_service() {
+    stop
+    start
+}
