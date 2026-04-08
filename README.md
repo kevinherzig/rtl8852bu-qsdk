@@ -1,6 +1,11 @@
 # RTL8852BU/RTL8832BU driver for Qualcomm QSDK 12.5
+# EXPERIMENTAL - Try it but expect crashes and please leave feedback.
 
 Patched Realtek RTL8852BU/RTL8832BU USB WiFi driver for routers running **Qualcomm QSDK 12.5** (kernel 5.4.213), such as the **GL.iNet GL-BE3600**.
+
+I used Claude to build a copy of this driver and debug the crashes it had.  I am going to be trying it out.  If you use it expect crashes.  Leave feedback with any information and I will try to fix.
+
+This won't work with the luci interface due to lack of features in the driver.  Maybe if there is enough interest I'll explore it.
 
 The upstream [lwfinger/rtl8852bu](https://github.com/lwfinger/rtl8852bu) driver crashes the kernel on connect and disconnect due to incompatibilities with Qualcomm's MLO (Multi-Link Operation) backport in QSDK. This fork fixes those issues.
 
