@@ -5,7 +5,7 @@ Patched Realtek RTL8852BU/RTL8832BU USB WiFi driver for routers running **Qualco
 
 I used Claude to build a copy of this driver and debug the crashes it had.  I am going to be trying it out.  If you use it expect crashes.  Leave feedback with any information and I will try to fix.
 
-This won't work with the luci interface due to lack of features in the driver.  Maybe if there is enough interest I'll explore it.
+This won't work with the LuCI web interface. QSDK routers only ship with `qcawificfg80211.sh` as the netifd wireless handler — the standard OpenWrt `mac80211.sh` handler is not available and can't be installed from the package repos. Even if it could, `mac80211.sh` calls `iw dev del` during interface teardown, which [deadlocks all out-of-tree Realtek drivers](https://github.com/openwrt/openwrt/issues/13919). The driver also doesn't implement `iw phy` commands that `mac80211.sh` needs for radio discovery. The adapter must be managed via wpa_supplicant on the CLI. If there is enough interest I'll explore it further.
 
 The upstream [lwfinger/rtl8852bu](https://github.com/lwfinger/rtl8852bu) driver crashes the kernel on connect and disconnect due to incompatibilities with Qualcomm's MLO (Multi-Link Operation) backport in QSDK. This fork fixes those issues.
 
