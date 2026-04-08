@@ -21,7 +21,7 @@ Should work on other QSDK 12.5 routers with the same kernel. Open an issue if yo
 
 ## Quick install (pre-built binary)
 
-Download `8852bu.ko` from the [Releases page](https://github.com/kevinherzig/rtl8852bu/releases).
+**[Download 8852bu.ko](https://github.com/kevinherzig/rtl8852bu-qsdk/releases/download/v1.0.0-qsdk12.5/8852bu.ko)** | [All releases](https://github.com/kevinherzig/rtl8852bu-qsdk/releases)
 
 > Your router's vermagic must match exactly: `5.4.213 SMP preempt mod_unload aarch64`.
 > Check with: `modinfo /lib/modules/5.4.213/act_connmark.ko | grep vermagic`
