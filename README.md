@@ -3,6 +3,8 @@
 
 Patched Realtek RTL8852BU/RTL8832BU USB WiFi driver for routers running **Qualcomm QSDK 12.5** (kernel 5.4.213), such as the **GL.iNet GL-BE3600**.
 
+I'm using this with the BrosTrend AX1800 USB WiFi 6 adapter.
+
 I used Claude to build a copy of this driver and debug the crashes it had.  I am going to be trying it out.  If you use it expect crashes.  Leave feedback with any information and I will try to fix.
 
 This won't work with the LuCI web interface. QSDK routers only ship with `qcawificfg80211.sh` as the netifd wireless handler — the standard OpenWrt `mac80211.sh` handler is not available and can't be installed from the package repos. Even if it could, `mac80211.sh` calls `iw dev del` during interface teardown, which [deadlocks all out-of-tree Realtek drivers](https://github.com/openwrt/openwrt/issues/13919). The driver also doesn't implement `iw phy` commands that `mac80211.sh` needs for radio discovery. The adapter must be managed via wpa_supplicant on the CLI. If there is enough interest I'll explore it further.
