@@ -7,7 +7,7 @@ I'm using this with the BrosTrend AX1800 USB WiFi 6 adapter.
 
 I used Claude to build a copy of this driver and debug the crashes it had.  I am going to be trying it out.  If you use it expect crashes.  Leave feedback with any information and I will try to fix.
 
-This won't work with the LuCI web interface. QSDK routers only ship with `qcawificfg80211.sh` as the netifd wireless handler — the standard OpenWrt `mac80211.sh` handler is not available and can't be installed from the package repos. Even if it could, `mac80211.sh` calls `iw dev del` during interface teardown, which [deadlocks all out-of-tree Realtek drivers](https://github.com/openwrt/openwrt/issues/13919). The driver also doesn't implement `iw phy` commands that `mac80211.sh` needs for radio discovery. The adapter must be managed via wpa_supplicant on the CLI. If there is enough interest I'll explore it further.
+LuCI integration is included — the adapter shows up in the LuCI wireless page for configuration. AP mode is not yet supported (see Known Limitations).
 
 The upstream [lwfinger/rtl8852bu](https://github.com/lwfinger/rtl8852bu) driver crashes the kernel on connect and disconnect due to incompatibilities with Qualcomm's MLO (Multi-Link Operation) backport in QSDK. This fork fixes those issues.
 
@@ -21,12 +21,20 @@ USB adapter: `0bda:b832` Realtek RTL8832BU 802.11ax WLAN Adapter
 
 Should work on other QSDK 12.5 routers with the same kernel. Open an issue if you test on a different device.
 
-## Quick install (pre-built binary)
+## Quick install
 
-**[Download 8852bu.ko](https://github.com/kevinherzig/rtl8852bu-qsdk/releases/download/v1.0.0-qsdk12.5/8852bu.ko)** | [All releases](https://github.com/kevinherzig/rtl8852bu-qsdk/releases)
+SSH into your router and run:
+
+```sh
+wget --no-check-certificate -O- https://raw.githubusercontent.com/kevinherzig/rtl8852bu-qsdk/main/install.sh | sh
+```
+
+This downloads and installs the opkg package, loads the module, and sets up LuCI integration. After install, configure in LuCI under Network -> Wireless, or see manual setup below.
 
 > Your router's vermagic must match exactly: `5.4.213 SMP preempt mod_unload aarch64`.
 > Check with: `modinfo /lib/modules/5.4.213/act_connmark.ko | grep vermagic`
+
+**[Download ipk](https://github.com/kevinherzig/rtl8852bu-qsdk/releases/download/v1.0.0-qsdk12.5/kmod-rtl8852bu_1.1.0-1_aarch64_cortex-a53_neon-vfpv4.ipk)** | **[Download 8852bu.ko](https://github.com/kevinherzig/rtl8852bu-qsdk/releases/download/v1.0.0-qsdk12.5/8852bu.ko)** | [All releases](https://github.com/kevinherzig/rtl8852bu-qsdk/releases)
 
 ```sh
 # Copy to router
