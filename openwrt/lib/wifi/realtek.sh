@@ -24,7 +24,7 @@ detect_realtek() {
 		macaddr=$(cat "/sys/class/net/$ifname/address" 2>/dev/null)
 
 		# Check if already configured
-		uci -q show wireless | grep -q "option type 'realtek'" && return 0
+		uci -q get wireless.radio_rtk.type >/dev/null 2>&1 && return 0
 
 		local dev_path
 		dev_path=$(readlink -f "/sys/class/net/$ifname/device" 2>/dev/null)

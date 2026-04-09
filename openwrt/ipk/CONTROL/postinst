@@ -2,15 +2,13 @@
 [ -z "${IPKG_INSTROOT}" ] || exit 0
 
 # Auto-load module on boot
-if ! grep -q "8852bu" /etc/modules.d/* 2>/dev/null; then
-    echo "8852bu rtw_power_mgnt=0 rtw_ips_mode=0" > /etc/modules.d/rtl8852bu
-fi
+echo "8852bu rtw_power_mgnt=0 rtw_ips_mode=0" > /etc/modules.d/rtl8852bu
 
 # Load module now
 insmod 8852bu rtw_power_mgnt=0 rtw_ips_mode=0 2>/dev/null
 sleep 2
 
-# Detect and create UCI config
+# Detect and create UCI config if not already present
 . /lib/wifi/realtek.sh
 
 # Ensure wwan network exists

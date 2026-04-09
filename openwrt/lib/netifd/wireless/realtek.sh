@@ -47,8 +47,8 @@ drv_realtek_setup() {
 }
 
 realtek_setup_sta() {
-	local vif="$1"
-	local ifname="$2"
+	local ifname="$1"
+	local vif="$2"
 
 	json_select config
 	json_get_vars ssid key encryption bssid
@@ -115,7 +115,7 @@ drv_realtek_teardown() {
 	[ -f "$pid_file" ] && kill "$(cat "$pid_file")" 2>/dev/null
 	rm -f "$pid_file" "/var/run/wpa_supplicant-${ifname}.conf"
 
-	ip link set "$ifname" down 2>/dev/null
+	# Do NOT bring the interface down - the Realtek driver crashes on ip link set down
 }
 
 drv_realtek_cleanup() {
@@ -173,4 +173,5 @@ realtek_find_ifname() {
 	return 1
 }
 
+init_wireless_driver "$@"
 add_driver realtek

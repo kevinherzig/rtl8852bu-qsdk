@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 IPK_DIR="$SCRIPT_DIR/ipk"
 BUILD_DIR="$SCRIPT_DIR/build-ipk"
-PKG_NAME="kmod-rtl8852bu_1.0.0-1_aarch64_cortex-a53_neon-vfpv4.ipk"
+PKG_NAME="kmod-rtl8852bu_1.1.0-1_aarch64_cortex-a53_neon-vfpv4.ipk"
 
 if [ ! -f "$REPO_DIR/8852bu.ko" ]; then
     echo "Error: 8852bu.ko not found. Build the driver first."
